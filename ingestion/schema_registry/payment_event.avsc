@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "PaymentEvent",
+  "namespace": "com.roip.events",
+  "fields": [
+    {"name": "event_id",      "type": "string"},
+    {"name": "event_type",    "type": "string"},
+    {"name": "order_id",      "type": "string"},
+    {"name": "customer_id",   "type": "string"},
+    {"name": "amount",        "type": "double"},
+    {"name": "currency",      "type": "string", "default": "INR"},
+    {"name": "occurred_at",   "type": "long",   "logicalType": "timestamp-millis"},
+    {"name": "ingested_at",   "type": "long",   "logicalType": "timestamp-millis"},
+    {"name": "schema_version","type": "string", "default": "1.0"},
+    {"name": "gateway",       "type": "string"},
+    {"name": "status",        "type": "string"}
+  ]
+}
