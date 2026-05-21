@@ -8,17 +8,16 @@ from kafka.errors import KafkaError
 from event_generator import EventGenerator
 
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
 logger = logging.getLogger("order-producer")
 
 BOOTSTRAP_SERVERS = "localhost:9092"
-EVENTS_PER_SECOND = 10   # tunable — crank up to stress test
-DLQ_TOPIC         = "dlq-events"
+EVENTS_PER_SECOND = 10  # tunable — crank up to stress test
+DLQ_TOPIC = "dlq-events"
 
-REQUIRED_FIELDS = {"event_id", "event_type", "order_id",
-                   "customer_id", "occurred_at"}
+REQUIRED_FIELDS = {"event_id", "event_type", "order_id", "customer_id", "occurred_at"}
+
 
 def validate_event(event: dict) -> tuple[bool, str]:
     """Returns (is_valid, reason)."""
@@ -29,6 +28,7 @@ def validate_event(event: dict) -> tuple[bool, str]:
         return False, "event_id is empty"
     return True, ""
 
+
 def on_send_success(record_metadata):
     logger.debug(
         f"Delivered → topic={record_metadata.topic} "
@@ -36,8 +36,10 @@ def on_send_success(record_metadata):
         f"offset={record_metadata.offset}"
     )
 
+
 def on_send_error(exc):
     logger.error(f"Delivery failed: {exc}")
+
 
 class OrderProducer:
     def __init__(self):
@@ -46,19 +48,19 @@ class OrderProducer:
             value_serializer=lambda v: json.dumps(v).encode("utf-8"),
             key_serializer=lambda k: k.encode("utf-8") if k else None,
             # Reliability settings
-            acks="all",          # wait for all in-sync replicas
+            acks="all",  # wait for all in-sync replicas
             retries=3,
             max_in_flight_requests_per_connection=1,  # preserves ordering
             compression_type="snappy",
-            linger_ms=5,         # batch events for 5ms before sending
+            linger_ms=5,  # batch events for 5ms before sending
             batch_size=16384,
         )
-        self.generator  = EventGenerator(chaos_rate=0.05)
-        self.running    = True
+        self.generator = EventGenerator(chaos_rate=0.05)
+        self.running = True
         self.sent_count = 0
-        self.dlq_count  = 0
+        self.dlq_count = 0
 
-        signal.signal(signal.SIGINT,  self._shutdown)
+        signal.signal(signal.SIGINT, self._shutdown)
         signal.signal(signal.SIGTERM, self._shutdown)
 
     def _shutdown(self, *_):
@@ -72,10 +74,10 @@ class OrderProducer:
         if not is_valid:
             # Wrap in DLQ envelope with failure metadata
             dlq_record = {
-                "original_event":  event,
-                "failure_reason":  reason,
-                "source_topic":    topic,
-                "failed_at":       int(time.time() * 1000),
+                "original_event": event,
+                "failure_reason": reason,
+                "source_topic": topic,
+                "failed_at": int(time.time() * 1000),
             }
             self.producer.send(
                 DLQ_TOPIC,
@@ -92,7 +94,9 @@ class OrderProducer:
             topic,
             key=partition_key,
             value=event,
-        ).add_callback(on_send_success).add_errback(on_send_error)
+        ).add_callback(
+            on_send_success
+        ).add_errback(on_send_error)
         self.sent_count += 1
 
     def run(self):
@@ -113,12 +117,13 @@ class OrderProducer:
                 )
 
             elapsed = time.monotonic() - start
-            sleep   = max(0, interval - elapsed)
+            sleep = max(0, interval - elapsed)
             time.sleep(sleep)
 
         self.producer.flush()
         self.producer.close()
         logger.info("Producer cleanly shut down.")
+
 
 if __name__ == "__main__":
     OrderProducer().run()

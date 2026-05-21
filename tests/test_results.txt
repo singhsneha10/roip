@@ -1,0 +1,134 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-8.2.0, pluggy-1.6.0 -- /home/sneha/projects/roip/.venv/bin/python3.11
+cachedir: .pytest_cache
+rootdir: /home/sneha/projects/roip
+plugins: anyio-4.13.0, Faker-40.18.0, cov-5.0.0
+collecting ... collected 25 items
+
+tests/integration/test_pipeline_e2e.py::test_cast_and_extract_produces_correct_types ERROR [  4%]
+tests/integration/test_pipeline_e2e.py::test_silver_dq_passes_on_clean_data ERROR [  8%]
+tests/integration/test_pipeline_e2e.py::test_hourly_orders_count ERROR   [ 12%]
+tests/integration/test_pipeline_e2e.py::test_payment_health_counts ERROR [ 16%]
+tests/unit/test_batch_jobs.py::test_hourly_orders_aggregation ERROR      [ 20%]
+tests/unit/test_batch_jobs.py::test_payment_health_groups_correctly ERROR [ 24%]
+tests/unit/test_batch_jobs.py::test_reconciliation_pass ERROR            [ 28%]
+tests/unit/test_batch_jobs.py::test_reconciliation_fail FAILED           [ 32%]
+tests/unit/test_bronze_writer.py::test_valid_events_pass_validation ERROR [ 36%]
+tests/unit/test_bronze_writer.py::test_missing_order_id_routes_to_invalid ERROR [ 40%]
+tests/unit/test_bronze_writer.py::test_invalid_event_type_routes_to_invalid ERROR [ 44%]
+tests/unit/test_bronze_writer.py::test_duplicate_event_ids_tagged ERROR  [ 48%]
+tests/unit/test_dq_suite.py::test_suite_has_critical_and_warning_sections FAILED [ 52%]
+tests/unit/test_dq_suite.py::test_all_expectations_have_required_keys FAILED [ 56%]
+tests/unit/test_dq_suite.py::test_expectation_names_are_unique FAILED    [ 60%]
+tests/unit/test_event_generator.py::test_order_event_has_required_fields PASSED [ 64%]
+tests/unit/test_event_generator.py::test_order_id_format PASSED          [ 68%]
+tests/unit/test_event_generator.py::test_late_event_is_in_the_past PASSED [ 72%]
+tests/unit/test_event_generator.py::test_malformed_event_missing_order_id PASSED [ 76%]
+tests/unit/test_event_generator.py::test_schema_evolved_event_version PASSED [ 80%]
+tests/unit/test_event_generator.py::test_chaos_produces_some_duplicates PASSED [ 84%]
+tests/unit/test_pipeline_metrics.py::test_record_batch_processed_increments_counter PASSED [ 88%]
+tests/unit/test_pipeline_metrics.py::test_record_dlq_event_increments_counter PASSED [ 92%]
+tests/unit/test_pipeline_metrics.py::test_batch_timer_records_duration PASSED [ 96%]
+tests/unit/test_pipeline_metrics.py::test_record_dq_results_sets_gauges PASSED [100%]
+
+==================================== ERRORS ====================================
+________ ERROR at setup of test_cast_and_extract_produces_correct_types ________
+tests/integration/test_pipeline_e2e.py:39: in spark
+    .getOrCreate()
+.venv/lib/python3.11/site-packages/pyspark/sql/session.py:478: in getOrCreate
+    raise PySparkRuntimeError(
+E   pyspark.errors.exceptions.base.PySparkRuntimeError: [CONNECT_URL_NOT_SET] Cannot create a Spark Connect session because the Spark Connect remote URL has not been set. Please define the remote URL by setting either the 'spark.remote' option or the 'SPARK_REMOTE' environment variable.
+____________ ERROR at setup of test_silver_dq_passes_on_clean_data _____________
+tests/integration/test_pipeline_e2e.py:39: in spark
+    .getOrCreate()
+.venv/lib/python3.11/site-packages/pyspark/sql/session.py:478: in getOrCreate
+    raise PySparkRuntimeError(
+E   pyspark.errors.exceptions.base.PySparkRuntimeError: [CONNECT_URL_NOT_SET] Cannot create a Spark Connect session because the Spark Connect remote URL has not been set. Please define the remote URL by setting either the 'spark.remote' option or the 'SPARK_REMOTE' environment variable.
+__________________ ERROR at setup of test_hourly_orders_count __________________
+tests/integration/test_pipeline_e2e.py:39: in spark
+    .getOrCreate()
+.venv/lib/python3.11/site-packages/pyspark/sql/session.py:478: in getOrCreate
+    raise PySparkRuntimeError(
+E   pyspark.errors.exceptions.base.PySparkRuntimeError: [CONNECT_URL_NOT_SET] Cannot create a Spark Connect session because the Spark Connect remote URL has not been set. Please define the remote URL by setting either the 'spark.remote' option or the 'SPARK_REMOTE' environment variable.
+_________________ ERROR at setup of test_payment_health_counts _________________
+tests/integration/test_pipeline_e2e.py:39: in spark
+    .getOrCreate()
+.venv/lib/python3.11/site-packages/pyspark/sql/session.py:478: in getOrCreate
+    raise PySparkRuntimeError(
+E   pyspark.errors.exceptions.base.PySparkRuntimeError: [CONNECT_URL_NOT_SET] Cannot create a Spark Connect session because the Spark Connect remote URL has not been set. Please define the remote URL by setting either the 'spark.remote' option or the 'SPARK_REMOTE' environment variable.
+_______________ ERROR at setup of test_hourly_orders_aggregation _______________
+tests/unit/test_batch_jobs.py:17: in spark
+    .getOrCreate()
+.venv/lib/python3.11/site-packages/pyspark/sql/session.py:478: in getOrCreate
+    raise PySparkRuntimeError(
+E   pyspark.errors.exceptions.base.PySparkRuntimeError: [CONNECT_URL_NOT_SET] Cannot create a Spark Connect session because the Spark Connect remote URL has not been set. Please define the remote URL by setting either the 'spark.remote' option or the 'SPARK_REMOTE' environment variable.
+____________ ERROR at setup of test_payment_health_groups_correctly ____________
+tests/unit/test_batch_jobs.py:17: in spark
+    .getOrCreate()
+.venv/lib/python3.11/site-packages/pyspark/sql/session.py:478: in getOrCreate
+    raise PySparkRuntimeError(
+E   pyspark.errors.exceptions.base.PySparkRuntimeError: [CONNECT_URL_NOT_SET] Cannot create a Spark Connect session because the Spark Connect remote URL has not been set. Please define the remote URL by setting either the 'spark.remote' option or the 'SPARK_REMOTE' environment variable.
+__________________ ERROR at setup of test_reconciliation_pass __________________
+tests/unit/test_batch_jobs.py:17: in spark
+    .getOrCreate()
+.venv/lib/python3.11/site-packages/pyspark/sql/session.py:478: in getOrCreate
+    raise PySparkRuntimeError(
+E   pyspark.errors.exceptions.base.PySparkRuntimeError: [CONNECT_URL_NOT_SET] Cannot create a Spark Connect session because the Spark Connect remote URL has not been set. Please define the remote URL by setting either the 'spark.remote' option or the 'SPARK_REMOTE' environment variable.
+_____________ ERROR at setup of test_valid_events_pass_validation ______________
+tests/unit/test_bronze_writer.py:17: in spark
+    .getOrCreate()
+.venv/lib/python3.11/site-packages/pyspark/sql/session.py:478: in getOrCreate
+    raise PySparkRuntimeError(
+E   pyspark.errors.exceptions.base.PySparkRuntimeError: [CONNECT_URL_NOT_SET] Cannot create a Spark Connect session because the Spark Connect remote URL has not been set. Please define the remote URL by setting either the 'spark.remote' option or the 'SPARK_REMOTE' environment variable.
+__________ ERROR at setup of test_missing_order_id_routes_to_invalid ___________
+tests/unit/test_bronze_writer.py:17: in spark
+    .getOrCreate()
+.venv/lib/python3.11/site-packages/pyspark/sql/session.py:478: in getOrCreate
+    raise PySparkRuntimeError(
+E   pyspark.errors.exceptions.base.PySparkRuntimeError: [CONNECT_URL_NOT_SET] Cannot create a Spark Connect session because the Spark Connect remote URL has not been set. Please define the remote URL by setting either the 'spark.remote' option or the 'SPARK_REMOTE' environment variable.
+_________ ERROR at setup of test_invalid_event_type_routes_to_invalid __________
+tests/unit/test_bronze_writer.py:17: in spark
+    .getOrCreate()
+.venv/lib/python3.11/site-packages/pyspark/sql/session.py:478: in getOrCreate
+    raise PySparkRuntimeError(
+E   pyspark.errors.exceptions.base.PySparkRuntimeError: [CONNECT_URL_NOT_SET] Cannot create a Spark Connect session because the Spark Connect remote URL has not been set. Please define the remote URL by setting either the 'spark.remote' option or the 'SPARK_REMOTE' environment variable.
+______________ ERROR at setup of test_duplicate_event_ids_tagged _______________
+tests/unit/test_bronze_writer.py:17: in spark
+    .getOrCreate()
+.venv/lib/python3.11/site-packages/pyspark/sql/session.py:478: in getOrCreate
+    raise PySparkRuntimeError(
+E   pyspark.errors.exceptions.base.PySparkRuntimeError: [CONNECT_URL_NOT_SET] Cannot create a Spark Connect session because the Spark Connect remote URL has not been set. Please define the remote URL by setting either the 'spark.remote' option or the 'SPARK_REMOTE' environment variable.
+=================================== FAILURES ===================================
+___________________________ test_reconciliation_fail ___________________________
+tests/unit/test_batch_jobs.py:97: in test_reconciliation_fail
+    from batch.reconciliation.daily_reconciliation import TOLERANCE_PCT
+E   ModuleNotFoundError: No module named 'batch'
+_________________ test_suite_has_critical_and_warning_sections _________________
+tests/unit/test_dq_suite.py:11: in test_suite_has_critical_and_warning_sections
+    from silver_orders_suite import build_expectation_suite
+E   ModuleNotFoundError: No module named 'silver_orders_suite'
+___________________ test_all_expectations_have_required_keys ___________________
+tests/unit/test_dq_suite.py:20: in test_all_expectations_have_required_keys
+    from silver_orders_suite import build_expectation_suite
+E   ModuleNotFoundError: No module named 'silver_orders_suite'
+______________________ test_expectation_names_are_unique _______________________
+tests/unit/test_dq_suite.py:31: in test_expectation_names_are_unique
+    from silver_orders_suite import build_expectation_suite
+E   ModuleNotFoundError: No module named 'silver_orders_suite'
+=========================== short test summary info ============================
+FAILED tests/unit/test_batch_jobs.py::test_reconciliation_fail - ModuleNotFou...
+FAILED tests/unit/test_dq_suite.py::test_suite_has_critical_and_warning_sections
+FAILED tests/unit/test_dq_suite.py::test_all_expectations_have_required_keys
+FAILED tests/unit/test_dq_suite.py::test_expectation_names_are_unique - Modul...
+ERROR tests/integration/test_pipeline_e2e.py::test_cast_and_extract_produces_correct_types
+ERROR tests/integration/test_pipeline_e2e.py::test_silver_dq_passes_on_clean_data
+ERROR tests/integration/test_pipeline_e2e.py::test_hourly_orders_count - pysp...
+ERROR tests/integration/test_pipeline_e2e.py::test_payment_health_counts - py...
+ERROR tests/unit/test_batch_jobs.py::test_hourly_orders_aggregation - pyspark...
+ERROR tests/unit/test_batch_jobs.py::test_payment_health_groups_correctly - p...
+ERROR tests/unit/test_batch_jobs.py::test_reconciliation_pass - pyspark.error...
+ERROR tests/unit/test_bronze_writer.py::test_valid_events_pass_validation - p...
+ERROR tests/unit/test_bronze_writer.py::test_missing_order_id_routes_to_invalid
+ERROR tests/unit/test_bronze_writer.py::test_invalid_event_type_routes_to_invalid
+ERROR tests/unit/test_bronze_writer.py::test_duplicate_event_ids_tagged - pys...
+=================== 4 failed, 10 passed, 11 errors in 1.74s ====================

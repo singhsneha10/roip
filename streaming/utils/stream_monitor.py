@@ -7,21 +7,21 @@ logger = logging.getLogger("stream-monitor")
 
 class BatchMetrics:
     """Tracks per-batch metrics for observability."""
+
     def __init__(self):
-        self.total_batches     = 0
-        self.total_records     = 0
-        self.total_duplicates  = 0
-        self.total_dlq         = 0
-        self.start_time        = time.time()
+        self.total_batches = 0
+        self.total_records = 0
+        self.total_duplicates = 0
+        self.total_dlq = 0
+        self.start_time = time.time()
 
-    def record_batch(self, batch_id: int, written: int,
-                     duplicates: int, dlq: int):
-        self.total_batches    += 1
-        self.total_records    += written
+    def record_batch(self, batch_id: int, written: int, duplicates: int, dlq: int):
+        self.total_batches += 1
+        self.total_records += written
         self.total_duplicates += duplicates
-        self.total_dlq        += dlq
+        self.total_dlq += dlq
 
-        elapsed    = time.time() - self.start_time
+        elapsed = time.time() - self.start_time
         throughput = self.total_records / elapsed if elapsed > 0 else 0
 
         logger.info(

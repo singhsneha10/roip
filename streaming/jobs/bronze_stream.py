@@ -18,22 +18,21 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../utils"))
 
 from spark_session import get_spark_session
-from bronze_writer  import write_to_bronze
-from pyspark.sql    import functions as F
+from bronze_writer import write_to_bronze
+from pyspark.sql import functions as F
 
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
 logger = logging.getLogger("bronze-stream")
 
 # ── Configuration ────────────────────────────────────────────────────────────
-KAFKA_BOOTSTRAP   = "localhost:9092"
-KAFKA_TOPIC       = "orders-raw"
-CHECKPOINT_PATH   = "/tmp/roip/checkpoints/bronze_orders"
-TRIGGER_SECONDS   = 30        # process a micro-batch every 30 seconds
-WATERMARK_MINUTES = "10 minutes"   # wait up to 10 min for late events
-MAX_OFFSETS       = 50000     # max records per micro-batch (backpressure)
+KAFKA_BOOTSTRAP = "localhost:9092"
+KAFKA_TOPIC = "orders-raw"
+CHECKPOINT_PATH = "/tmp/roip/checkpoints/bronze_orders"
+TRIGGER_SECONDS = 30  # process a micro-batch every 30 seconds
+WATERMARK_MINUTES = "10 minutes"  # wait up to 10 min for late events
+MAX_OFFSETS = 50000  # max records per micro-batch (backpressure)
 
 
 def build_kafka_stream(spark):
@@ -45,19 +44,18 @@ def build_kafka_stream(spark):
     resumes from exactly where we left off.
     """
     return (
-        spark.readStream
-        .format("kafka")
+        spark.readStream.format("kafka")
         .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP)
         .option("subscribe", KAFKA_TOPIC)
         .option("startingOffsets", "latest")
-        .option("maxOffsetsPerTrigger", MAX_OFFSETS)   # backpressure
-        .option("failOnDataLoss", "false")   # tolerate Kafka log compaction
+        .option("maxOffsetsPerTrigger", MAX_OFFSETS)  # backpressure
+        .option("failOnDataLoss", "false")  # tolerate Kafka log compaction
         .load()
         # Cast binary Kafka fields to strings
-        .withColumn("key",       F.col("key").cast("string"))
-        .withColumn("value",     F.col("value").cast("string"))
+        .withColumn("key", F.col("key").cast("string"))
+        .withColumn("value", F.col("value").cast("string"))
         .withColumn("partition", F.col("partition").cast("string"))
-        .withColumn("offset",    F.col("offset").cast("string"))
+        .withColumn("offset", F.col("offset").cast("string"))
     )
 
 
@@ -91,8 +89,7 @@ def main():
     # In production you'd parse occurred_at from the JSON first.
     # We use kafka timestamp here as a safe fallback.
     timed_stream = raw_stream.withColumn(
-        "event_time",
-        (F.col("timestamp").cast("long") / 1000).cast("timestamp")
+        "event_time", (F.col("timestamp").cast("long") / 1000).cast("timestamp")
     )
 
     # Apply watermark
@@ -102,8 +99,7 @@ def main():
     # for combining streaming with Delta Lake operations that
     # require batch semantics (MERGE, dedup windows, etc.)
     query = (
-        watermarked.writeStream
-        .foreachBatch(write_to_bronze)
+        watermarked.writeStream.foreachBatch(write_to_bronze)
         .option("checkpointLocation", CHECKPOINT_PATH)
         .trigger(processingTime=f"{TRIGGER_SECONDS} seconds")
         .queryName("bronze-orders-stream")

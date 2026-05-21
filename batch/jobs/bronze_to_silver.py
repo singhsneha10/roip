@@ -16,32 +16,32 @@ Run: python bronze_to_silver.py --date 2024-01-15
 
 import sys
 import os
+
+sys.path.insert(0, "../quality/monitors")
+from pipeline_metrics import BatchTimer, record_batch_processed, start_metrics_server
 import argparse
 import logging
 from datetime import datetime, timedelta
 
-BASE_DIR = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "../../")
-)
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 
 sys.path.insert(0, os.path.join(BASE_DIR, "streaming/utils"))
 sys.path.insert(0, os.path.join(BASE_DIR, "streaming"))
 
 from spark_session import get_spark_session
-from pyspark.sql  import functions as F, DataFrame
+from pyspark.sql import functions as F, DataFrame
 from pyspark.sql.window import Window
 from delta import DeltaTable
 
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
 logger = logging.getLogger("bronze-to-silver")
 
 # ── Paths ─────────────────────────────────────────────────────────────
-BRONZE_PATH       = "/tmp/roip/lakehouse/bronze/orders"
-SILVER_ORDERS     = "/tmp/roip/lakehouse/silver/orders"
-SILVER_CUSTOMERS  = "/tmp/roip/lakehouse/silver/dim_customers"
+BRONZE_PATH = "/tmp/roip/lakehouse/bronze/orders"
+SILVER_ORDERS = "/tmp/roip/lakehouse/silver/orders"
+SILVER_CUSTOMERS = "/tmp/roip/lakehouse/silver/dim_customers"
 SILVER_DQ_RESULTS = "/tmp/roip/lakehouse/silver/dq_results"
 
 
@@ -55,8 +55,7 @@ def read_bronze(spark, processing_date: str) -> DataFrame:
     """
     logger.info(f"Reading Bronze for date={processing_date}")
     df = (
-        spark.read
-        .format("delta")
+        spark.read.format("delta")
         .load(BRONZE_PATH)
         .filter(F.col("ingestion_date") == processing_date)
         # Drop confirmed duplicates — keep only first occurrence
@@ -81,87 +80,61 @@ def cast_and_extract(df: DataFrame, processing_date: str) -> DataFrame:
     return (
         df
         # Convert epoch millis to proper timestamp
-        .withColumn(
-            "event_timestamp",
-            (F.col("occurred_at") / 1000).cast("timestamp")
-        )
-        .withColumn(
-            "event_date",
-            F.to_date(F.col("event_timestamp"))
-        )
-        .withColumn(
-            "event_hour",
-            F.hour(F.col("event_timestamp"))
-        )
+        .withColumn("event_timestamp", (F.col("occurred_at") / 1000).cast("timestamp"))
+        .withColumn("event_date", F.to_date(F.col("event_timestamp")))
+        .withColumn("event_hour", F.hour(F.col("event_timestamp")))
         # Extract typed fields from the payload map
+        .withColumn("city", F.coalesce(F.col("payload")["city"], F.lit("UNKNOWN")))
         .withColumn(
-            "city",
-            F.coalesce(F.col("payload")["city"], F.lit("UNKNOWN"))
+            "category", F.coalesce(F.col("payload")["category"], F.lit("UNKNOWN"))
         )
         .withColumn(
-            "category",
-            F.coalesce(F.col("payload")["category"], F.lit("UNKNOWN"))
-        )
-        .withColumn(
-            "amount",
-            F.coalesce(
-                F.col("payload")["amount"].cast("double"),
-                F.lit(0.0)
-            )
+            "amount", F.coalesce(F.col("payload")["amount"].cast("double"), F.lit(0.0))
         )
         .withColumn(
             "item_count",
-            F.coalesce(
-                F.col("payload")["item_count"].cast("integer"),
-                F.lit(0)
-            )
+            F.coalesce(F.col("payload")["item_count"].cast("integer"), F.lit(0)),
         )
         .withColumn(
             "discount_pct",
-            F.coalesce(
-                F.col("payload")["discount_pct"].cast("double"),
-                F.lit(0.0)
-            )
+            F.coalesce(F.col("payload")["discount_pct"].cast("double"), F.lit(0.0)),
         )
-        .withColumn(
-            "device",
-            F.coalesce(F.col("payload")["device"], F.lit("UNKNOWN"))
-        )
-        .withColumn(
-            "pincode",
-            F.col("payload")["pincode"]
-        )
+        .withColumn("device", F.coalesce(F.col("payload")["device"], F.lit("UNKNOWN")))
+        .withColumn("pincode", F.col("payload")["pincode"])
         # Pipeline metadata
         .withColumn("silver_loaded_at", F.current_timestamp())
-        .withColumn("processing_date",  F.lit(processing_date))
+        .withColumn("processing_date", F.lit(processing_date))
         # Drop raw fields we've now extracted
-        .drop("payload", "is_duplicate", "bronze_loaded_at",
-              "kafka_partition", "kafka_offset")
+        .drop(
+            "payload",
+            "is_duplicate",
+            "bronze_loaded_at",
+            "kafka_partition",
+            "kafka_offset",
+        )
     )
 
 
 # ── Step 3: Silver data quality checks ────────────────────────────────
-def run_silver_dq(df: DataFrame,
-                  processing_date: str,
-                  spark) -> tuple[DataFrame, dict]:
+def run_silver_dq(df: DataFrame, processing_date: str, spark) -> tuple[DataFrame, dict]:
     """
     Run DQ checks and return (clean_df, dq_metrics).
     We don't fail the job on DQ issues — we log and alert.
     This is production thinking: a failed pipeline is worse
     than a pipeline that completes with known quality gaps.
     """
-    total   = df.count()
+    total = df.count()
     metrics = {"processing_date": processing_date, "total_records": total}
 
     # Check 1: amount must be positive
     neg_amount = df.filter(F.col("amount") <= 0).count()
     metrics["neg_amount_count"] = neg_amount
-    metrics["neg_amount_pct"]   = round(neg_amount / max(total, 1) * 100, 2)
+    metrics["neg_amount_pct"] = round(neg_amount / max(total, 1) * 100, 2)
 
     # Check 2: city must not be UNKNOWN
     unknown_city = df.filter(F.col("city") == "UNKNOWN").count()
     metrics["unknown_city_count"] = unknown_city
-    metrics["unknown_city_pct"]   = round(unknown_city / max(total, 1) * 100, 2)
+    metrics["unknown_city_pct"] = round(unknown_city / max(total, 1) * 100, 2)
 
     # Check 3: event_type distribution shouldn't change >50% vs 7-day avg
     # (simplified version — in production this compares to a rolling average)
@@ -177,19 +150,14 @@ def run_silver_dq(df: DataFrame,
 
     # Overall pass/fail
     metrics["dq_passed"] = (
-        metrics["neg_amount_pct"]   < 5.0 and
-        metrics["unknown_city_pct"] < 10.0 and
-        null_customers              == 0
+        metrics["neg_amount_pct"] < 5.0
+        and metrics["unknown_city_pct"] < 10.0
+        and null_customers == 0
     )
 
     # Save DQ results to Delta
     dq_df = spark.createDataFrame([metrics])
-    (
-        dq_df.write
-        .format("delta")
-        .mode("append")
-        .save(SILVER_DQ_RESULTS)
-    )
+    (dq_df.write.format("delta").mode("append").save(SILVER_DQ_RESULTS))
 
     logger.info(f"DQ results: {metrics}")
     if not metrics["dq_passed"]:
@@ -210,16 +178,11 @@ def write_silver_orders(df: DataFrame, processing_date: str):
     This is exactly-once semantics at the batch layer.
     """
     try:
-        silver_table = DeltaTable.forPath(
-            df.sparkSession, SILVER_ORDERS
-        )
+        silver_table = DeltaTable.forPath(df.sparkSession, SILVER_ORDERS)
         logger.info("Silver table exists — using MERGE for idempotency")
         (
             silver_table.alias("target")
-            .merge(
-                df.alias("source"),
-                "target.event_id = source.event_id"
-            )
+            .merge(df.alias("source"), "target.event_id = source.event_id")
             .whenMatchedUpdateAll()
             .whenNotMatchedInsertAll()
             .execute()
@@ -228,8 +191,7 @@ def write_silver_orders(df: DataFrame, processing_date: str):
         # Table doesn't exist yet — create it
         logger.info("Silver table not found — creating with initial write")
         (
-            df.write
-            .format("delta")
+            df.write.format("delta")
             .mode("overwrite")
             .partitionBy("event_date")
             .option("overwriteSchema", "true")
@@ -255,18 +217,17 @@ def upsert_customer_dimension(df: DataFrame, spark):
     """
     # Build the latest snapshot of each customer from today's events
     customer_snapshot = (
-        df
-        .filter(F.col("customer_id").isNotNull())
+        df.filter(F.col("customer_id").isNotNull())
         .groupBy("customer_id")
         .agg(
-            F.first("city",     ignorenulls=True).alias("city"),
-            F.first("device",   ignorenulls=True).alias("device"),
+            F.first("city", ignorenulls=True).alias("city"),
+            F.first("device", ignorenulls=True).alias("device"),
             F.max("event_timestamp").alias("last_seen_at"),
         )
         .withColumn("effective_from", F.current_date())
-        .withColumn("effective_to",   F.lit(None).cast("date"))
-        .withColumn("is_current",     F.lit(True))
-        .withColumn("dim_version",    F.lit(1))
+        .withColumn("effective_to", F.lit(None).cast("date"))
+        .withColumn("is_current", F.lit(True))
+        .withColumn("dim_version", F.lit(1))
     )
 
     try:
@@ -283,20 +244,17 @@ def upsert_customer_dimension(df: DataFrame, spark):
                 """
                 target.customer_id = source.customer_id
                 AND target.is_current = true
-                """
+                """,
             )
             # Case 1: same city — just update last_seen_at
             .whenMatchedUpdate(
                 condition="target.city = source.city",
-                set={"last_seen_at": "source.last_seen_at"}
+                set={"last_seen_at": "source.last_seen_at"},
             )
             # Case 2: city changed — expire the old record
             .whenMatchedUpdate(
                 condition="target.city != source.city",
-                set={
-                    "effective_to": "source.effective_from",
-                    "is_current":   "false"
-                }
+                set={"effective_to": "source.effective_from", "is_current": "false"},
             )
             # Case 3: new customer
             .whenNotMatchedInsertAll()
@@ -308,19 +266,17 @@ def upsert_customer_dimension(df: DataFrame, spark):
         changed_customers = (
             customer_snapshot.alias("new")
             .join(
-                dim_table.toDF().filter("is_current = false")
-                         .alias("expired"),
-                (F.col("new.customer_id") == F.col("expired.customer_id")) &
-                (F.col("expired.effective_to") == F.current_date()),
-                "inner"
+                dim_table.toDF().filter("is_current = false").alias("expired"),
+                (F.col("new.customer_id") == F.col("expired.customer_id"))
+                & (F.col("expired.effective_to") == F.current_date()),
+                "inner",
             )
             .select("new.*")
         )
 
         if not changed_customers.isEmpty():
             (
-                changed_customers.write
-                .format("delta")
+                changed_customers.write.format("delta")
                 .mode("append")
                 .save(SILVER_CUSTOMERS)
             )
@@ -332,8 +288,7 @@ def upsert_customer_dimension(df: DataFrame, spark):
     except Exception:
         logger.info("Customer dim not found — creating initial version")
         (
-            customer_snapshot.write
-            .format("delta")
+            customer_snapshot.write.format("delta")
             .mode("overwrite")
             .option("overwriteSchema", "true")
             .save(SILVER_CUSTOMERS)
@@ -348,25 +303,44 @@ def main():
     parser.add_argument(
         "--date",
         default=(datetime.utcnow() - timedelta(days=1)).strftime("%Y-%m-%d"),
-        help="Processing date (YYYY-MM-DD). Defaults to yesterday."
+        help="Processing date (YYYY-MM-DD). Defaults to yesterday.",
     )
     args = parser.parse_args()
 
     logger.info(f"Bronze→Silver job starting for date={args.date}")
+
     spark = get_spark_session(app_name=f"ROIP-Silver-{args.date}")
 
-    bronze_df  = read_bronze(spark, args.date)
-    silver_df  = cast_and_extract(bronze_df, args.date)
-    clean_df, dq_metrics = run_silver_dq(silver_df, args.date, spark)
+    # Start Prometheus metrics server
+    start_metrics_server(port=8001)
 
-    write_silver_orders(clean_df, args.date)
-    upsert_customer_dimension(clean_df, spark)
+    # Track total batch execution time
+    with BatchTimer("bronze_to_silver", "silver"):
+
+        bronze_df = read_bronze(spark, args.date)
+
+        silver_df = cast_and_extract(bronze_df, args.date)
+
+        clean_df, dq_metrics = run_silver_dq(silver_df, args.date, spark)
+
+        write_silver_orders(clean_df, args.date)
+
+        upsert_customer_dimension(clean_df, spark)
+
+        # Record processed batch metrics
+        record_batch_processed(
+            layer="silver",
+            source="bronze_orders",
+            event_type="ALL",
+            count=dq_metrics["total_records"],
+        )
 
     logger.info(
         f"Bronze→Silver complete | "
         f"records={dq_metrics['total_records']} | "
         f"dq_passed={dq_metrics['dq_passed']}"
     )
+
     spark.stop()
 
 

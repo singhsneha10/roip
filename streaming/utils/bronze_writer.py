@@ -6,9 +6,9 @@ from delta import DeltaTable
 
 logger = logging.getLogger(__name__)
 
-BRONZE_PATH    = "/tmp/roip/lakehouse/bronze/orders"
-DLQ_PATH       = "/tmp/roip/lakehouse/bronze/dlq"
-PIPELINE_VER   = "1.0.0"
+BRONZE_PATH = "/tmp/roip/lakehouse/bronze/orders"
+DLQ_PATH = "/tmp/roip/lakehouse/bronze/dlq"
+PIPELINE_VER = "1.0.0"
 
 
 def write_to_bronze(batch_df: DataFrame, batch_id: int):
@@ -33,31 +33,23 @@ def write_to_bronze(batch_df: DataFrame, batch_id: int):
         return
 
     # ── 1. Parse the JSON payload from Kafka ─────────────────────────
-    parsed_df = (
-        batch_df
-        .withColumn(
-            "parsed",
-            F.from_json(F.col("value").cast("string"), ORDER_EVENT_SCHEMA)
-        )
-        .select(
-            "parsed.*",
-            F.col("partition").alias("kafka_partition"),
-            F.col("offset").alias("kafka_offset"),
-        )
+    parsed_df = batch_df.withColumn(
+        "parsed", F.from_json(F.col("value").cast("string"), ORDER_EVENT_SCHEMA)
+    ).select(
+        "parsed.*",
+        F.col("partition").alias("kafka_partition"),
+        F.col("offset").alias("kafka_offset"),
     )
 
     # ── 2. Add pipeline metadata columns ─────────────────────────────
     enriched_df = (
-        parsed_df
-        .withColumn("pipeline_version", F.lit(PIPELINE_VER))
-        .withColumn("bronze_loaded_at",
-                    F.lit(int(__import__("time").time() * 1000)))
+        parsed_df.withColumn("pipeline_version", F.lit(PIPELINE_VER))
+        .withColumn("bronze_loaded_at", F.lit(int(__import__("time").time() * 1000)))
         .withColumn(
             "ingestion_date",
             F.date_format(
-                (F.col("occurred_at") / 1000).cast("timestamp"),
-                "yyyy-MM-dd"
-            )
+                (F.col("occurred_at") / 1000).cast("timestamp"), "yyyy-MM-dd"
+            ),
         )
     )
 
@@ -68,40 +60,33 @@ def write_to_bronze(batch_df: DataFrame, batch_id: int):
     #    We use a window function to find the first occurrence of each
     #    event_id, then tag everything else as a duplicate.
     from pyspark.sql.window import Window
+
     window = Window.partitionBy("event_id").orderBy("bronze_loaded_at")
 
     deduped_df = (
-        valid_df
-        .withColumn("_row_num", F.row_number().over(window))
+        valid_df.withColumn("_row_num", F.row_number().over(window))
         .withColumn(
             "is_duplicate",
-            F.when(F.col("_row_num") > 1, F.lit("true"))
-             .otherwise(F.lit("false"))
+            F.when(F.col("_row_num") > 1, F.lit("true")).otherwise(F.lit("false")),
         )
         .drop("_row_num")
     )
 
     # ── 5. Write valid events to Bronze (Delta, partitioned by date) ──
     record_count = deduped_df.count()
-    dup_count    = deduped_df.filter(F.col("is_duplicate") == "true").count()
+    dup_count = deduped_df.filter(F.col("is_duplicate") == "true").count()
 
     (
-        deduped_df.write
-        .format("delta")
+        deduped_df.write.format("delta")
         .mode("append")
         .partitionBy("ingestion_date")
-        .option("mergeSchema", "true")     # handles schema evolution
+        .option("mergeSchema", "true")  # handles schema evolution
         .save(BRONZE_PATH)
     )
 
     # ── 6. Write invalid events to DLQ path ──────────────────────────
     if not invalid_df.isEmpty():
-        (
-            invalid_df.write
-            .format("delta")
-            .mode("append")
-            .save(DLQ_PATH)
-        )
+        (invalid_df.write.format("delta").mode("append").save(DLQ_PATH))
 
     logger.info(
         f"Batch {batch_id}: written={record_count} "

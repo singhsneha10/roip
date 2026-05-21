@@ -1,0 +1,21 @@
+[tool.black]
+line-length    = 88
+target-version = ['py311']
+include        = '\.pyi?$'
+exclude        = '''/(\.venv|__pycache__|\.git)/'''
+
+[tool.ruff]
+line-length = 88
+select      = ["E", "F", "W", "I"]   # pycodestyle, pyflakes, warnings, isort
+ignore      = ["E501"]               # line length handled by black
+exclude     = [".venv", "__pycache__"]
+
+[tool.pytest.ini_options]
+testpaths    = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts      = "-v --tb=short --cov=. --cov-report=term-missing"
+
+[tool.coverage.run]
+omit = [".venv/*", "tests/*", "*/migrations/*"]

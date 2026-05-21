@@ -2,11 +2,16 @@ from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 
 
-REQUIRED_FIELDS   = ["event_id", "event_type", "order_id", "customer_id"]
+REQUIRED_FIELDS = ["event_id", "event_type", "order_id", "customer_id"]
 VALID_EVENT_TYPES = [
-    "ORDER_PLACED", "ORDER_CONFIRMED", "ORDER_CANCELLED",
-    "PAYMENT_INITIATED", "PAYMENT_SUCCESS", "PAYMENT_FAILED",
-    "ORDER_SHIPPED", "ORDER_DELIVERED",
+    "ORDER_PLACED",
+    "ORDER_CONFIRMED",
+    "ORDER_CANCELLED",
+    "PAYMENT_INITIATED",
+    "PAYMENT_SUCCESS",
+    "PAYMENT_FAILED",
+    "ORDER_SHIPPED",
+    "ORDER_DELIVERED",
 ]
 
 
@@ -19,8 +24,7 @@ def validate_bronze_events(df: DataFrame) -> tuple[DataFrame, DataFrame]:
     """
     # Check required fields are not null or empty
     null_checks = [
-        F.col(field).isNotNull() & (F.col(field) != "")
-        for field in REQUIRED_FIELDS
+        F.col(field).isNotNull() & (F.col(field) != "") for field in REQUIRED_FIELDS
     ]
     all_valid = null_checks[0]
     for check in null_checks[1:]:
@@ -31,12 +35,12 @@ def validate_bronze_events(df: DataFrame) -> tuple[DataFrame, DataFrame]:
 
     is_valid = all_valid & valid_type
 
-    valid_df   = df.filter(is_valid)
+    valid_df = df.filter(is_valid)
     invalid_df = df.filter(~is_valid).withColumn(
         "validation_failure",
         F.when(~all_valid, F.lit("missing_required_fields"))
-         .when(~valid_type, F.lit("invalid_event_type"))
-         .otherwise(F.lit("unknown"))
+        .when(~valid_type, F.lit("invalid_event_type"))
+        .otherwise(F.lit("unknown")),
     )
 
     return valid_df, invalid_df

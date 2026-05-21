@@ -18,40 +18,38 @@ import argparse
 from datetime import datetime, timedelta
 import os
 
-sys.path.insert(
-    0,
-    os.path.join(os.path.dirname(__file__), "../../streaming/utils")
-)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../streaming/utils"))
 
 from spark_session import get_spark_session
-from pyspark.sql   import functions as F
+from pyspark.sql import functions as F
 
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
 logger = logging.getLogger("reconciliation")
 
-BRONZE_PATH       = "/tmp/roip/lakehouse/bronze/orders"
-SILVER_ORDERS     = "/tmp/roip/lakehouse/silver/orders"
-RECON_RESULTS     = "/tmp/roip/lakehouse/monitoring/reconciliation"
+BRONZE_PATH = "/tmp/roip/lakehouse/bronze/orders"
+SILVER_ORDERS = "/tmp/roip/lakehouse/silver/orders"
+RECON_RESULTS = "/tmp/roip/lakehouse/monitoring/reconciliation"
 
-TOLERANCE_PCT     = 1.0    # allow 1% variance before alerting
+TOLERANCE_PCT = 1.0  # allow 1% variance before alerting
 
 
 def reconcile(spark, processing_date: str):
     # ── Count Bronze (raw, non-duplicate) ────────────────────────────
     bronze_count = (
-        spark.read.format("delta").load(BRONZE_PATH)
+        spark.read.format("delta")
+        .load(BRONZE_PATH)
         .filter(F.col("ingestion_date") == processing_date)
-        .filter(F.col("is_duplicate")   == "false")
+        .filter(F.col("is_duplicate") == "false")
         .count()
     )
 
     # ── Count Silver ──────────────────────────────────────────────────
     try:
         silver_count = (
-            spark.read.format("delta").load(SILVER_ORDERS)
+            spark.read.format("delta")
+            .load(SILVER_ORDERS)
             .filter(F.col("processing_date") == processing_date)
             .count()
         )
@@ -60,21 +58,18 @@ def reconcile(spark, processing_date: str):
         logger.warning("Silver table not found or empty")
 
     # ── Compute variance ──────────────────────────────────────────────
-    variance_pct = (
-        abs(bronze_count - silver_count) /
-        max(bronze_count, 1) * 100
-    )
+    variance_pct = abs(bronze_count - silver_count) / max(bronze_count, 1) * 100
 
     status = "PASS" if variance_pct <= TOLERANCE_PCT else "FAIL"
 
     result = {
-        "processing_date":  processing_date,
-        "bronze_count":     bronze_count,
-        "silver_count":     silver_count,
-        "variance_pct":     round(variance_pct, 4),
-        "tolerance_pct":    TOLERANCE_PCT,
-        "status":           status,
-        "checked_at":       datetime.utcnow().isoformat(),
+        "processing_date": processing_date,
+        "bronze_count": bronze_count,
+        "silver_count": silver_count,
+        "variance_pct": round(variance_pct, 4),
+        "tolerance_pct": TOLERANCE_PCT,
+        "status": status,
+        "checked_at": datetime.utcnow().isoformat(),
     }
 
     logger.info(
@@ -93,12 +88,7 @@ def reconcile(spark, processing_date: str):
 
     # ── Persist result ────────────────────────────────────────────────
     result_df = spark.createDataFrame([result])
-    (
-        result_df.write
-        .format("delta")
-        .mode("append")
-        .save(RECON_RESULTS)
-    )
+    (result_df.write.format("delta").mode("append").save(RECON_RESULTS))
 
     return result
 

@@ -24,14 +24,14 @@ from airflow.operators.python import PythonOperator, BranchPythonOperator
 from airflow.utils.dates import days_ago
 
 SPARK_JOBS = "/home/{{ var.value.roip_user }}/projects/roip"
-VENV       = f"{SPARK_JOBS}/.venv/bin/python"
+VENV = f"{SPARK_JOBS}/.venv/bin/python"
 
 default_args = {
-    "owner":            "data-engineering",
-    "depends_on_past":  False,
-    "retries":          2,
-    "retry_delay":      timedelta(minutes=5),
-    "email_on_failure": False,    # set True in production with SMTP config
+    "owner": "data-engineering",
+    "depends_on_past": False,
+    "retries": 2,
+    "retry_delay": timedelta(minutes=5),
+    "email_on_failure": False,  # set True in production with SMTP config
     "execution_timeout": timedelta(hours=2),
 }
 
@@ -39,9 +39,9 @@ with DAG(
     dag_id="roip_daily_pipeline",
     default_args=default_args,
     description="ROIP daily batch: Bronze→Silver→Gold + reconciliation",
-    schedule_interval="0 2 * * *",        # 02:00 UTC every day
+    schedule_interval="0 2 * * *",  # 02:00 UTC every day
     start_date=days_ago(1),
-    catchup=False,                        # don't rerun missed dates
+    catchup=False,  # don't rerun missed dates
     tags=["roip", "batch", "medallion"],
     doc_md="""
     ## ROIP Daily Pipeline
@@ -61,7 +61,7 @@ with DAG(
         bash_command=(
             f"cd {SPARK_JOBS}/batch/jobs && "
             f"{VENV} bronze_to_silver.py "
-            "--date {{ ds }}"        # ds = execution date (YYYY-MM-DD)
+            "--date {{ ds }}"  # ds = execution date (YYYY-MM-DD)
         ),
         doc_md="Transforms raw Bronze events into typed Silver facts.",
     )
@@ -95,10 +95,15 @@ with DAG(
         If yes → mark_success. If no → trigger_backfill.
         """
         import subprocess
+
         result = subprocess.run(
-            ["grep", "-c", "PASS",
-             f"/tmp/roip/lakehouse/monitoring/recon_{context['ds']}.log"],
-            capture_output=True
+            [
+                "grep",
+                "-c",
+                "PASS",
+                f"/tmp/roip/lakehouse/monitoring/recon_{context['ds']}.log",
+            ],
+            capture_output=True,
         )
         if result.returncode == 0:
             return "pipeline_success"

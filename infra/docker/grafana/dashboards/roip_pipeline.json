@@ -1,0 +1,75 @@
+{
+  "title": "ROIP Pipeline Observability",
+  "uid": "roip-main",
+  "panels": [
+    {
+      "title": "Records Processed (total)",
+      "type": "stat",
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+      "targets": [{
+        "expr": "sum(roip_records_processed_total)",
+        "legendFormat": "Total Records"
+      }]
+    },
+    {
+      "title": "DLQ Events (total)",
+      "type": "stat",
+      "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+      "targets": [{
+        "expr": "sum(roip_dlq_events_total)",
+        "legendFormat": "DLQ Events"
+      }]
+    },
+    {
+      "title": "Pipeline Lag (seconds)",
+      "type": "gauge",
+      "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+      "targets": [{
+        "expr": "max(roip_pipeline_lag_seconds)",
+        "legendFormat": "Max Lag"
+      }],
+      "options": {
+        "reduceOptions": {"calcs": ["lastNotNull"]},
+        "thresholds": {
+          "steps": [
+            {"color": "green",  "value": 0},
+            {"color": "yellow", "value": 60},
+            {"color": "red",    "value": 300}
+          ]
+        }
+      }
+    },
+    {
+      "title": "DQ Check Results",
+      "type": "table",
+      "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+      "targets": [{
+        "expr": "roip_dq_check_result",
+        "legendFormat": "{{check_name}} ({{severity}})"
+      }]
+    },
+    {
+      "title": "Records/min by Layer",
+      "type": "timeseries",
+      "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+      "targets": [{
+        "expr": "rate(roip_records_processed_total[5m]) * 60",
+        "legendFormat": "{{layer}}"
+      }]
+    },
+    {
+      "title": "Batch Duration",
+      "type": "timeseries",
+      "gridPos": {"x": 0, "y": 12, "w": 24, "h": 8},
+      "targets": [{
+        "expr": "histogram_quantile(0.95, roip_batch_duration_seconds_bucket)",
+        "legendFormat": "p95 {{job_name}}"
+      }, {
+        "expr": "histogram_quantile(0.50, roip_batch_duration_seconds_bucket)",
+        "legendFormat": "p50 {{job_name}}"
+      }]
+    }
+  ],
+  "refresh": "30s",
+  "time": {"from": "now-3h", "to": "now"}
+}

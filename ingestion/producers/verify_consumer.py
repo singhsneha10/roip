@@ -5,6 +5,7 @@ from kafka import KafkaConsumer
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("verify-consumer")
 
+
 def consume(topic: str = "orders-raw", max_messages: int = 20):
     consumer = KafkaConsumer(
         topic,
@@ -28,6 +29,7 @@ def consume(topic: str = "orders-raw", max_messages: int = 20):
             break
     logger.info(f"Consumed {count} messages.")
     consumer.close()
+
 
 if __name__ == "__main__":
     consume("orders-raw")
