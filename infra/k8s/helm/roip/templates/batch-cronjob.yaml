@@ -1,0 +1,59 @@
+{{- if .Values.batch.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: roip-daily-batch
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: roip-daily-batch
+    component: batch
+spec:
+  schedule: {{ .Values.batch.schedule | quote }}
+  concurrencyPolicy: Forbid       # don't run two batch jobs simultaneously
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      backoffLimit: 2             # retry up to 2 times on failure
+      template:
+        metadata:
+          labels:
+            app: roip-daily-batch
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: batch-runner
+              image: "{{ .Values.global.image.repository }}-batch:{{ .Values.streaming.image.tag }}"
+              imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  set -e
+                  DATE=$(date -d "yesterday" +%Y-%m-%d)
+                  echo "Running batch for date: $DATE"
+                  python batch/jobs/bronze_to_silver.py --date $DATE
+                  python batch/jobs/silver_to_gold.py   --date $DATE
+                  python batch/reconciliation/daily_reconciliation.py --date $DATE
+                  python quality/expectations/silver_orders_suite.py  --date $DATE
+              env:
+                - name: KAFKA_BOOTSTRAP_SERVERS
+                  valueFrom:
+                    secretKeyRef:
+                      name: roip-secrets
+                      key: kafka-bootstrap-servers
+              resources:
+                requests:
+                  memory: {{ .Values.batch.resources.requests.memory }}
+                  cpu:    {{ .Values.batch.resources.requests.cpu }}
+                limits:
+                  memory: {{ .Values.batch.resources.limits.memory }}
+                  cpu:    {{ .Values.batch.resources.limits.cpu }}
+              volumeMounts:
+                - name: lakehouse-storage
+                  mountPath: /data/lakehouse
+          volumes:
+            - name: lakehouse-storage
+              persistentVolumeClaim:
+                claimName: roip-lakehouse-pvc
+{{- end }}

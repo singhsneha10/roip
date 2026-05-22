@@ -1,0 +1,94 @@
+{{- if .Values.streaming.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: roip-bronze-stream
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: roip-bronze-stream
+    component: streaming
+    version: {{ .Chart.AppVersion }}
+spec:
+  replicas: {{ .Values.streaming.replicaCount }}
+  selector:
+    matchLabels:
+      app: roip-bronze-stream
+  template:
+    metadata:
+      labels:
+        app: roip-bronze-stream
+        component: streaming
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port:   "{{ .Values.monitoring.prometheusPort }}"
+        prometheus.io/path:   "/metrics"
+    spec:
+      containers:
+        - name: bronze-stream
+          image: "{{ .Values.global.image.repository }}-streaming:{{ .Values.streaming.image.tag }}"
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.monitoring.prometheusPort }}
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                secretKeyRef:
+                  name: roip-secrets
+                  key: kafka-bootstrap-servers
+            - name: KAFKA_TOPIC
+              value: {{ .Values.streaming.env.kafkaTopic | quote }}
+            - name: TRIGGER_SECONDS
+              value: {{ .Values.streaming.env.triggerSeconds | quote }}
+            - name: WATERMARK_MINUTES
+              value: {{ .Values.streaming.env.watermarkMinutes | quote }}
+            - name: MAX_OFFSETS
+              value: {{ .Values.streaming.env.maxOffsets | quote }}
+            - name: BRONZE_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: roip-config
+                  key: bronze-path
+            - name: CHECKPOINT_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: roip-config
+                  key: checkpoint-path
+          resources:
+            requests:
+              memory: {{ .Values.streaming.resources.requests.memory }}
+              cpu:    {{ .Values.streaming.resources.requests.cpu }}
+            limits:
+              memory: {{ .Values.streaming.resources.limits.memory }}
+              cpu:    {{ .Values.streaming.resources.limits.cpu }}
+          # Liveness probe: if /metrics endpoint dies, restart the pod
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: {{ .Values.monitoring.prometheusPort }}
+            initialDelaySeconds: 60
+            periodSeconds:       30
+            failureThreshold:    3
+          # Readiness probe: don't send traffic until this passes
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: {{ .Values.monitoring.prometheusPort }}
+            initialDelaySeconds: 30
+            periodSeconds:       10
+          volumeMounts:
+            - name: lakehouse-storage
+              mountPath: /data/lakehouse
+            - name: checkpoint-storage
+              mountPath: /data/checkpoints
+      volumes:
+        - name: lakehouse-storage
+          persistentVolumeClaim:
+            claimName: roip-lakehouse-pvc
+        - name: checkpoint-storage
+          persistentVolumeClaim:
+            claimName: roip-checkpoint-pvc
+      # Graceful shutdown: give Spark 90s to finish current micro-batch
+      terminationGracePeriodSeconds: 90
+      restartPolicy: Always
+{{- end }}

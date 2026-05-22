@@ -1,0 +1,57 @@
+global:
+  namespace: roip
+  image:
+    repository: roip
+    pullPolicy: IfNotPresent
+
+streaming:
+  enabled: true
+  replicaCount: 1
+  image:
+    tag: latest
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "1000m"
+    limits:
+      memory: "4Gi"
+      cpu: "2000m"
+  env:
+    kafkaTopic:       "orders-raw"
+    triggerSeconds:   "30"
+    watermarkMinutes: "10"
+    maxOffsets:       "50000"
+
+batch:
+  enabled: true
+  schedule: "0 2 * * *"   # 02:00 UTC daily
+  resources:
+    requests:
+      memory: "4Gi"
+      cpu: "2000m"
+    limits:
+      memory: "8Gi"
+      cpu: "4000m"
+
+kafka:
+  bootstrapServers: "kafka-service:9092"
+  consumerGroup:    "roip-bronze-stream"
+  topic:            "orders-raw"
+  lagThreshold:     10000    # KEDA scales up when lag exceeds this
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 8
+  kafkaLagThreshold: 10000
+
+monitoring:
+  enabled: true
+  prometheusPort: 8000
+  grafanaPort:    3000
+
+storage:
+  className: "standard"
+  bronzeSize: "20Gi"
+  silverSize: "10Gi"
+  goldSize:   "5Gi"

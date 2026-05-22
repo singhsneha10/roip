@@ -1,0 +1,30 @@
+{{- if .Values.autoscaling.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: roip-bronze-stream-scaler
+  namespace: {{ .Values.global.namespace }}
+spec:
+  scaleTargetRef:
+    name: roip-bronze-stream           # the Deployment to scale
+  minReplicaCount: {{ .Values.autoscaling.minReplicas }}
+  maxReplicaCount: {{ .Values.autoscaling.maxReplicas }}
+
+  # KEDA polls every 30s — matches our micro-batch trigger
+  pollingInterval: 30
+
+  # After lag clears, wait 5 min before scaling down
+  # Prevents thrashing when lag oscillates around the threshold
+  cooldownPeriod:  300
+
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: {{ .Values.kafka.bootstrapServers }}
+        consumerGroup:    {{ .Values.kafka.consumerGroup }}
+        topic:            {{ .Values.kafka.topic }}
+        # Scale up when lag > 10,000 records per partition
+        lagThreshold:     "{{ .Values.autoscaling.kafkaLagThreshold }}"
+        # Each replica handles one partition
+        activationLagThreshold: "100"
+{{- end }}

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: roip-config
+  namespace: roip
+data:
+  bronze-path:          "/data/lakehouse/bronze/orders"
+  silver-path:          "/data/lakehouse/silver/orders"
+  gold-path:            "/data/lakehouse/gold"
+  checkpoint-path:      "/data/checkpoints"
+  pipeline-version:     "1.0.0"
+  watermark-minutes:    "10"
+  trigger-seconds:      "30"
+  max-offsets-trigger:  "50000"
+  metrics-port:         "8000"
