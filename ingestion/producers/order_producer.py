@@ -1,11 +1,10 @@
 import json
-import time
 import logging
 import signal
-import sys
-from kafka import KafkaProducer
-from kafka.errors import KafkaError
+import time
+
 from event_generator import EventGenerator
+from kafka import KafkaProducer
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
@@ -94,9 +93,7 @@ class OrderProducer:
             topic,
             key=partition_key,
             value=event,
-        ).add_callback(
-            on_send_success
-        ).add_errback(on_send_error)
+        ).add_callback(on_send_success).add_errback(on_send_error)
         self.sent_count += 1
 
     def run(self):

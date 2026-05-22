@@ -3,7 +3,6 @@ Tests for the data quality expectation suite.
 These run without Spark — pure Python unit tests.
 """
 
-import pytest
 import sys
 
 sys.path.insert(0, "quality/expectations")

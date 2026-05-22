@@ -3,13 +3,13 @@ Quick summary of Gold layer contents.
 Run after silver_to_gold.py to verify outputs.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../streaming/utils"))
 
-from spark_session import get_spark_session
 from pyspark.sql import functions as F
+from spark_session import get_spark_session
 
 GOLD_HOURLY = "/tmp/roip/lakehouse/gold/fact_hourly_orders"
 GOLD_SLA = "/tmp/roip/lakehouse/gold/fact_daily_sla"
@@ -30,9 +30,7 @@ def inspect():
         "order_count",
         "gross_revenue",
         "avg_order_value",
-    ).show(
-        10, truncate=False
-    )
+    ).show(10, truncate=False)
 
     print("\n── Daily SLA by City ─────────────────────────────────────")
     spark.read.format("delta").load(GOLD_SLA).orderBy("city", "delivery_status").show(

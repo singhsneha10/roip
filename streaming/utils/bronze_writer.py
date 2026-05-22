@@ -1,8 +1,7 @@
 import logging
+
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
-from delta import DeltaTable
-
 
 logger = logging.getLogger(__name__)
 

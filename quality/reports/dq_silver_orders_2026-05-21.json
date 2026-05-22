@@ -1,0 +1,73 @@
+{
+  "processing_date": "2026-05-21",
+  "run_timestamp": "2026-05-21T15:23:42.568688",
+  "critical": [
+    {
+      "name": "no_null_event_ids",
+      "description": "event_id must never be null",
+      "passed": true,
+      "metric_name": "null_event_id_count",
+      "metric_value": 0,
+      "severity": "CRITICAL"
+    },
+    {
+      "name": "no_null_order_ids",
+      "description": "order_id must never be null",
+      "passed": true,
+      "metric_name": "null_order_id_count",
+      "metric_value": 0,
+      "severity": "CRITICAL"
+    },
+    {
+      "name": "minimum_record_count",
+      "description": "Silver must have at least 100 records per day",
+      "passed": true,
+      "metric_name": "total_record_count",
+      "metric_value": 42103,
+      "severity": "CRITICAL"
+    },
+    {
+      "name": "valid_event_types_only",
+      "description": "All event_type values must be in allowed set",
+      "passed": true,
+      "metric_name": "invalid_event_type_count",
+      "metric_value": 0,
+      "severity": "CRITICAL"
+    },
+    {
+      "name": "no_future_events",
+      "description": "event_timestamp must not be in the future",
+      "passed": true,
+      "metric_name": "future_event_count",
+      "metric_value": 0,
+      "severity": "CRITICAL"
+    }
+  ],
+  "warning": [
+    {
+      "name": "amount_positive_rate",
+      "description": ">=95% of amounts must be positive",
+      "passed": true,
+      "metric_name": "negative_amount_pct",
+      "metric_value": 0.0,
+      "severity": "WARNING"
+    },
+    {
+      "name": "city_known_rate",
+      "description": ">=90% of city values must not be UNKNOWN",
+      "passed": true,
+      "metric_name": "unknown_city_pct",
+      "metric_value": 0.0,
+      "severity": "WARNING"
+    },
+    {
+      "name": "schema_version_distribution",
+      "description": "Track schema version spread (for evolution detection)",
+      "passed": true,
+      "metric_name": "schema_v2_pct",
+      "metric_value": 2.16,
+      "severity": "WARNING"
+    }
+  ],
+  "overall_status": "PASS"
+}

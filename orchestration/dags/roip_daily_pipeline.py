@@ -10,17 +10,18 @@ Task flow:
                   ↘ customer_dim_scd2               ↗
 
 Airflow concepts demonstrated:
-  - task dependencies with >> and 
+  - task dependencies with >> and
   - BashOperator for Spark job submission
   - conditional branching on DQ results
   - SLAs and alerting hooks
   - catchup=False (don't backfill historical runs on first deploy)
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
+
 from airflow import DAG
 from airflow.operators.bash import BashOperator
-from airflow.operators.python import PythonOperator, BranchPythonOperator
+from airflow.operators.python import BranchPythonOperator
 from airflow.utils.dates import days_ago
 
 SPARK_JOBS = "/home/{{ var.value.roip_user }}/projects/roip"
@@ -54,7 +55,6 @@ with DAG(
     **Owner**: Data Engineering team.
     """,
 ) as dag:
-
     # ── Task 1: Bronze → Silver ───────────────────────────────────────
     bronze_to_silver = BashOperator(
         task_id="bronze_to_silver",

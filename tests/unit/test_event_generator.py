@@ -1,5 +1,6 @@
-import pytest
 import sys
+
+import pytest
 
 sys.path.insert(0, "ingestion/producers")
 from event_generator import EventGenerator

@@ -6,10 +6,9 @@ Uses local Spark with tiny synthetic data — no Kafka needed.
 Runs in CI in about 60-90 seconds.
 """
 
-import pytest
 import sys
-import os
-from datetime import datetime
+
+import pytest
 
 sys.path.insert(0, "streaming/utils")
 sys.path.insert(0, "batch/jobs")

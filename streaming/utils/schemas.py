@@ -1,10 +1,9 @@
 from pyspark.sql.types import (
-    StructType,
-    StructField,
-    StringType,
     LongType,
     MapType,
-    TimestampType,
+    StringType,
+    StructField,
+    StructType,
 )
 
 # Raw Kafka message schema

@@ -14,24 +14,25 @@ What this job does:
 Run: python bronze_to_silver.py --date 2024-01-15
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, "../quality/monitors")
-from pipeline_metrics import BatchTimer, record_batch_processed, start_metrics_server
 import argparse
 import logging
 from datetime import datetime, timedelta
+
+from pipeline_metrics import BatchTimer, record_batch_processed, start_metrics_server
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 
 sys.path.insert(0, os.path.join(BASE_DIR, "streaming/utils"))
 sys.path.insert(0, os.path.join(BASE_DIR, "streaming"))
 
-from spark_session import get_spark_session
-from pyspark.sql import functions as F, DataFrame
-from pyspark.sql.window import Window
 from delta import DeltaTable
+from pyspark.sql import DataFrame
+from pyspark.sql import functions as F
+from spark_session import get_spark_session
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
@@ -316,7 +317,6 @@ def main():
 
     # Track total batch execution time
     with BatchTimer("bronze_to_silver", "silver"):
-
         bronze_df = read_bronze(spark, args.date)
 
         silver_df = cast_and_extract(bronze_df, args.date)

@@ -1,7 +1,7 @@
 import random
 import uuid
-import time
 from datetime import datetime, timedelta
+
 from faker import Faker
 from models import OrderEvent, PaymentEvent
 

@@ -1,6 +1,5 @@
-import time
 import logging
-from pyspark.sql import DataFrame
+import time
 
 logger = logging.getLogger("stream-monitor")
 

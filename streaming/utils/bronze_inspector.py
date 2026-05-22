@@ -3,11 +3,12 @@ Quick inspection of the Bronze Delta table.
 Run this in a separate terminal while the stream is running.
 """
 
-import sys, os
+import os
+import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
-from spark_session import get_spark_session
 from pyspark.sql import functions as F
+from spark_session import get_spark_session
 
 BRONZE_PATH = "/tmp/roip/lakehouse/bronze/orders"
 

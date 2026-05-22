@@ -35,7 +35,8 @@ def test_record_dlq_event_increments_counter():
 
 def test_batch_timer_records_duration():
     import time
-    from pipeline_metrics import BATCH_DURATION, BatchTimer
+
+    from pipeline_metrics import BatchTimer
 
     with BatchTimer("test_job", "test_layer"):
         time.sleep(0.05)  # 50ms simulated work

@@ -1,7 +1,12 @@
-import pytest
-from pyspark.sql.types import *
-import sys, os
+import sys
 
+import pytest
+from pyspark.sql.types import (
+    LongType,
+    StringType,
+    StructField,
+    StructType,
+)
 sys.path.insert(0, "streaming/utils")
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F

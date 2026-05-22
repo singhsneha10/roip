@@ -11,15 +11,15 @@ Key patterns demonstrated:
   - Graceful shutdown handling
 """
 
-import sys
 import logging
 import os
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../utils"))
 
-from spark_session import get_spark_session
 from bronze_writer import write_to_bronze
 from pyspark.sql import functions as F
+from spark_session import get_spark_session
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"

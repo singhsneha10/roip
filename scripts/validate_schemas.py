@@ -2,15 +2,17 @@
 Validates all Avro schema files in ingestion/schema_registry/.
 Called by CI to catch schema errors before deployment.
 """
+
 import json
 import sys
 from pathlib import Path
+
 import fastavro.schema
 
 
 def validate_all_schemas():
     schema_dir = Path("ingestion/schema_registry")
-    schemas    = list(schema_dir.glob("*.avsc"))
+    schemas = list(schema_dir.glob("*.avsc"))
 
     if not schemas:
         print("No .avsc files found — check schema_registry directory")

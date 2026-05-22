@@ -13,17 +13,18 @@ Philosophy:
   This mirrors how mature data teams operate.
 """
 
-import sys
+import argparse
 import json
 import logging
-import argparse
+import os
+import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
-sys.path.insert(0, "../streaming/utils")
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../streaming/utils"))
+)
 
-import great_expectations as gx
-from great_expectations.core.batch import RuntimeBatchRequest
 from pyspark.sql import functions as F
 from spark_session import get_spark_session
 

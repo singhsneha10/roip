@@ -1,7 +1,6 @@
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 
-
 REQUIRED_FIELDS = ["event_id", "event_type", "order_id", "customer_id"]
 VALID_EVENT_TYPES = [
     "ORDER_PLACED",

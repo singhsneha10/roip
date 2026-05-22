@@ -18,16 +18,15 @@ Metrics exposed:
   roip_duplicate_rate             — gauge, fraction of duplicate events
 """
 
-import time
-import threading
 import logging
+import threading
+import time
+
 from prometheus_client import (
     Counter,
-    Histogram,
     Gauge,
+    Histogram,
     start_http_server,
-    CollectorRegistry,
-    REGISTRY,
 )
 
 logger = logging.getLogger("pipeline-metrics")

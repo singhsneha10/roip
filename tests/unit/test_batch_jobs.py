@@ -1,11 +1,11 @@
+import sys
+
 import pytest
-import sys, os
 
 sys.path.insert(0, "streaming/utils")
 sys.path.insert(0, "batch/jobs")
 
 from pyspark.sql import SparkSession
-from pyspark.sql import functions as F
 
 
 @pytest.fixture(scope="session")
@@ -44,8 +44,9 @@ SILVER_COLS = [
 
 
 def test_hourly_orders_aggregation(spark):
-    from silver_to_gold import build_hourly_orders
     from datetime import datetime
+
+    from silver_to_gold import build_hourly_orders
 
     rows = [
         (
@@ -96,8 +97,9 @@ def test_hourly_orders_aggregation(spark):
 
 
 def test_payment_health_groups_correctly(spark):
-    from silver_to_gold import build_payment_health
     from datetime import datetime
+
+    from silver_to_gold import build_payment_health
 
     rows = [
         (
